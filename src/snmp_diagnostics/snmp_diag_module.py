@@ -6,8 +6,18 @@
 __all__ = ['SnmpDiagModule']
 
 
+from pysnmp.entity.rfc3413 import context
+
+
 class SnmpDiagModule(object):
     """A module that can process SNMP OIDs into ROS diagnostics."""
+
+    def __init__(self, engine):
+        """
+        :param SnmpEngine engine: The SNMP engine instance. 
+        """
+        self.engine = engine
+        self.mib_builder = context.SnmpContext(self.engine).getMibInstrum().getMibBuilder()
 
     def get_diag_name(self):
         """The name that will be shown in the top-level diagnostics item.

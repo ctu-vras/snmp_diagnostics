@@ -10,6 +10,7 @@ __all__ = ['IfMibDiagnostics']
 import sys
 
 from pysnmp.hlapi import ObjectType, ObjectIdentity
+from pysnmp.hlapi.varbinds import AbstractVarBinds
 
 import rospy
 
@@ -40,6 +41,7 @@ port_oper_status_names = {
 
 
 class NetworkInterfaceStatus:
+    name = ""
     alias = ""
     speed = 0
     operational_status = 0
@@ -63,19 +65,46 @@ class NetworkInterfaceDesiredStatus:
     mtu = None
 
 
+def startswith(oid1, oid2):
+    if len(oid1) < len(oid2):
+        return False
+    for i in range(len(oid2)):
+        if oid1[i] != oid2[i]:
+            return False
+    return True
+
+
+
+ifDescr = ifMtu = ifSpeed = ifOperStatus = ifName = ifHighSpeed = ifConnectorPresent = ifAlias = None
+
+
 class IfMibDiagnostics(SnmpDiagModule):
     """A module that can process SNMP IF-MIB data into ROS diagnostics."""
 
     oids = [
         ObjectType(ObjectIdentity('IF-MIB', 'ifAlias')),
-        ObjectType(ObjectIdentity('IF-MIB', 'ifSpeed')),
+        ObjectType(ObjectIdentity('IF-MIB', 'ifName')),
+        ObjectType(ObjectIdentity('IF-MIB', 'ifDescr')),
         ObjectType(ObjectIdentity('IF-MIB', 'ifHighSpeed')),
+        ObjectType(ObjectIdentity('IF-MIB', 'ifSpeed')),
         ObjectType(ObjectIdentity('IF-MIB', 'ifOperStatus')),
         ObjectType(ObjectIdentity('IF-MIB', 'ifConnectorPresent')),
         ObjectType(ObjectIdentity('IF-MIB', 'ifMtu')),
     ]
 
-    def __init__(self):
+    def __init__(self, engine):
+        """
+        :param SnmpEngine engine: The SNMP engine instance. 
+        """
+        super(IfMibDiagnostics, self).__init__(engine)
+        
+        global ifDescr, ifMtu, ifSpeed, ifOperStatus, ifName, ifHighSpeed, ifConnectorPresent, ifAlias
+        (
+            ifDescr, ifMtu, ifSpeed, ifOperStatus, ifName, ifHighSpeed, ifConnectorPresent, ifAlias,
+        ) = self.mib_builder.importSymbols('IF-MIB',
+            'ifDescr', 'ifMtu', 'ifSpeed', 'ifOperStatus', 'ifName', 'ifHighSpeed', 'ifConnectorPresent', 'ifAlias',
+        )
+        
         config = rospy.get_param("~modules/if_mib", {})
         self.num_ports = config.get("num_ports", None)
         self.desired_port_status = {}
@@ -109,13 +138,28 @@ class IfMibDiagnostics(SnmpDiagModule):
                 break
             else:
                 status = NetworkInterfaceStatus()
-                status.alias = str(varBinds[0][1])
-                speed = int(varBinds[1][1])
-                high_speed = int(varBinds[2][1])
-                status.speed = high_speed * 1000000 if speed == 4294967295 else speed
-                status.operational_status = int(varBinds[3][1])
-                status.connector_present = int(varBinds[4][1]) == 1
-                status.mtu = int(varBinds[5][1])
+                for oid, val in varBinds:
+                    oid = oid.getOid().asTuple()
+                    if startswith(oid, ifAlias.name):
+                        status.alias = status.name = str(val)
+                    elif startswith(oid, ifName.name):
+                        if status.name == "":
+                            status.name = str(val)
+                    elif startswith(oid, ifDescr.name):
+                        if status.name == "":
+                            status.name = str(val)
+                    elif startswith(oid, ifHighSpeed.name):
+                        if val != 0:
+                            status.speed = int(val) * 1000000
+                    elif startswith(oid, ifSpeed.name):
+                        if val != 0 and status.speed == 0:
+                            status.speed = int(val)
+                    elif startswith(oid, ifOperStatus.name):
+                        status.operational_status = int(val)
+                    elif startswith(oid, ifConnectorPresent.name):
+                        status.connector_present = int(val) == 1
+                    elif startswith(oid, ifMtu.name):
+                        status.mtu = int(val)
                 response.append(status)
         if len(response) == 0:
             response = None

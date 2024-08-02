@@ -47,7 +47,7 @@ context_data = ContextData()
 rate = SteadyRate(get_param("~rate", 1.0, "Hz"))
 
 modules = (
-    IfMibDiagnostics(),  # TODO plugin-like autodiscovery
+    IfMibDiagnostics(engine),  # TODO plugin-like autodiscovery
 )
 
 updater = Updater()
