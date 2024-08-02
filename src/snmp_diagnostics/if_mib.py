@@ -190,7 +190,7 @@ class IfMibDiagnostics(SnmpDiagModule):
                 status = "Not Connected"
                 if response[i].connector_present:
                     if response[i].operational_status == 1:
-                        status = if_speed_names[response[i].speed]
+                        status = if_speed_names.get(response[i].speed, "%i Mbps" % (int(response[i].speed / 1000000),))
                     else:
                         status = "Down"
                 diagnostics.add(port + " status", status)
