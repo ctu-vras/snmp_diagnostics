@@ -3,6 +3,8 @@
 
 """A module that can process SNMP IF-MIB data into ROS diagnostics."""
 
+from __future__ import print_function
+
 __all__ = ['IfMibDiagnostics']
 
 import sys
