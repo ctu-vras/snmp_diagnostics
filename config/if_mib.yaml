@@ -1,0 +1,29 @@
+# SPDX-License-Identifier: BSD-3-Clause
+# SPDX-FileCopyrightText: Czech Technical University in Prague
+
+# This is an example config of the if_mib module.
+
+modules:
+  if_mib:
+    num_ports: 12
+    ports:
+      Bullet:
+        connected: True
+        speed: 1000
+      Cam 6:
+        connected: True
+        speed: 1000
+      Cam 7:
+        connected: True
+        speed: 1000
+      Top Box:
+        dummy: True
+      IEI:
+        connected: True
+        speed: 1000
+      NUC:
+        connected: True
+        speed: 1000
+      Jetson:
+        connected: True
+        speed: 10000

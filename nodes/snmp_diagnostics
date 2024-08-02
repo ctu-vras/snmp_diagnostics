@@ -1,0 +1,82 @@
+#!/usr/bin/env python
+
+# SPDX-License-Identifier: BSD-3-Clause
+# SPDX-FileCopyrightText: Czech Technical University in Prague
+
+"""
+ROS node that reads various data over SNMP and turns them into ROS diagnostics messages.
+
+ROS parameters:
+- `~agent_address` (str, default '127.0.0.1'): Address of the SNMP agent.
+- `~agent_port` (int, default 161): UDP port of the SNMP agent.
+- `~community` (str, default 'public'): SNMP community.
+- `~snmp_v2` (bool, default True): Whether to use SNMPv2c or SNMPv1.
+- `~udpv6` (bool, default False): Whether to use UDPv6 transport or UDPv4.
+- `~rate` (float, default 1.0): The rate at which the SNMP agent is polled.
+- `~modules` (dict): Module-specific configuration.
+"""
+
+from __future__ import print_function
+
+import platform
+import sys
+
+from pysnmp.hlapi import CommunityData, ContextData, SnmpEngine, UdpTransportTarget, Udp6TransportTarget, nextCmd
+
+from cras import get_param, SteadyRate
+from diagnostic_updater import Updater
+
+import rospy
+
+from snmp_diagnostics.if_mib import IfMibDiagnostics
+
+rospy.init_node("snmp_diagnostics")
+
+agent_address = get_param("~agent_address", "127.0.0.1")
+agent_port = get_param("~agent_port", 161)
+community = get_param("~community", "public")
+snmp_v2 = get_param("~snmp_v2", True)
+udpv6 = get_param("~udpv6", False)
+
+engine = SnmpEngine()
+community_data = CommunityData(community, mpModel=int(snmp_v2))
+agent = (agent_address, agent_port)
+transport_target = Udp6TransportTarget(agent) if udpv6 else UdpTransportTarget(agent)
+context_data = ContextData()
+
+rate = SteadyRate(get_param("~rate", 1.0, "Hz"))
+
+modules = (
+    IfMibDiagnostics(),  # TODO plugin-like autodiscovery
+)
+
+updater = Updater()
+updater.setHardwareID(platform.node())
+
+for module in modules:
+    module.register(updater)
+
+
+def diag_update(_):
+    updater.update()
+
+
+timer = rospy.Timer(rospy.Duration(1), diag_update)
+
+stop = False
+while not rospy.is_shutdown() and not stop:
+    for module in modules:
+        try:
+            oids = module.get_oids()
+            if len(oids) == 0:
+                continue
+            cmd = nextCmd(engine, community_data, transport_target, context_data, *oids, lexicographicMode=False)
+            response = module.parse_response(cmd)
+            module.process_response(response)
+        except KeyboardInterrupt:
+            stop = True
+            break
+        except Exception as e:
+            print(e, file=sys.stderr)
+            # continue working as long as we can
+    rate.sleep()
