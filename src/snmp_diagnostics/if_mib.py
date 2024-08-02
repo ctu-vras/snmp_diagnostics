@@ -56,7 +56,7 @@ class NetworkInterfaceStatus:
             else:
                 status = "Down"
 
-        return "%s (%s)" % (self.alias, status)
+        return "%s (%s)" % (self.name, status)
 
 
 class NetworkInterfaceDesiredStatus:
@@ -179,7 +179,7 @@ class IfMibDiagnostics(SnmpDiagModule):
 
         port_indices = dict()
         for i in range(len(response)):
-            port_indices[response[i].alias] = i
+            port_indices[response[i].name] = i
 
         if self.num_ports is not None and len(response) != self.num_ports:
             diagnostics.mergeSummary(DiagnosticStatus.ERROR, "Wrong number of ports")
@@ -189,7 +189,7 @@ class IfMibDiagnostics(SnmpDiagModule):
                 continue
 
         for i in range(len(response)):
-            port = response[i].alias
+            port = response[i].name
 
             if port in self.desired_port_status:
                 diagnostics.add(port + " connection status", response[i].operational_status)
