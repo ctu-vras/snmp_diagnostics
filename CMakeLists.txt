@@ -8,7 +8,7 @@ catkin_python_setup()
 catkin_package()
 
 catkin_install_python(PROGRAMS
-  nodes/snmp_diagnostics
+  nodes/${PROJECT_NAME}
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 

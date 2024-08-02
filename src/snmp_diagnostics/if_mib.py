@@ -1,6 +1,10 @@
 # SPDX-License-Identifier: BSD-3-Clause
 # SPDX-FileCopyrightText: Czech Technical University in Prague
 
+"""A module that can process SNMP IF-MIB data into ROS diagnostics."""
+
+__all__ = ['IfMibDiagnostics']
+
 import sys
 
 from pysnmp.hlapi import ObjectType, ObjectIdentity
@@ -58,6 +62,8 @@ class NetworkInterfaceDesiredStatus:
 
 
 class IfMibDiagnostics(SnmpDiagModule):
+    """A module that can process SNMP IF-MIB data into ROS diagnostics."""
+
     oids = [
         ObjectType(ObjectIdentity('IF-MIB', 'ifAlias')),
         ObjectType(ObjectIdentity('IF-MIB', 'ifSpeed')),
