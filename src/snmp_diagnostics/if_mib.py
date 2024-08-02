@@ -45,7 +45,7 @@ class NetworkInterfaceStatus:
     alias = ""
     speed = 0
     operational_status = 0
-    connector_present = False
+    connector_present = True
     mtu = 1500
 
     def __str__(self):
