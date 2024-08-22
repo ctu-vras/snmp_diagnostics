@@ -14,7 +14,7 @@ class SnmpDiagModule(object):
 
     def __init__(self, engine):
         """
-        :param SnmpEngine engine: The SNMP engine instance. 
+        :param SnmpEngine engine: The SNMP engine instance.
         """
         self.engine = engine
         self.mib_builder = context.SnmpContext(self.engine).getMibInstrum().getMibBuilder()

@@ -74,7 +74,6 @@ def startswith(oid1, oid2):
     return True
 
 
-
 ifDescr = ifMtu = ifSpeed = ifOperStatus = ifName = ifHighSpeed = ifConnectorPresent = ifAlias = None
 
 
@@ -94,17 +93,18 @@ class IfMibDiagnostics(SnmpDiagModule):
 
     def __init__(self, engine):
         """
-        :param SnmpEngine engine: The SNMP engine instance. 
+        :param SnmpEngine engine: The SNMP engine instance.
         """
         super(IfMibDiagnostics, self).__init__(engine)
-        
+
         global ifDescr, ifMtu, ifSpeed, ifOperStatus, ifName, ifHighSpeed, ifConnectorPresent, ifAlias
         (
             ifDescr, ifMtu, ifSpeed, ifOperStatus, ifName, ifHighSpeed, ifConnectorPresent, ifAlias,
-        ) = self.mib_builder.importSymbols('IF-MIB',
+        ) = self.mib_builder.importSymbols(
+            'IF-MIB',
             'ifDescr', 'ifMtu', 'ifSpeed', 'ifOperStatus', 'ifName', 'ifHighSpeed', 'ifConnectorPresent', 'ifAlias',
         )
-        
+
         config = rospy.get_param("~modules/if_mib", {})
         self.num_ports = config.get("num_ports", None)
         self.desired_port_status = {}

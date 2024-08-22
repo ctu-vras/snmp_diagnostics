@@ -1,3 +1,7 @@
+<!--
+SPDX-License-Identifier: BSD-3-Clause
+SPDX-FileCopyrightText: Czech Technical University in Prague
+-->
 # snmp_diagnostics
 
 ROS diagnostics created from SNMP agent data
