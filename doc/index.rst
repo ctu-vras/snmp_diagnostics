@@ -8,8 +8,16 @@
 
 |description|
 
-Python API
-----------
+Core API
+--------
+
+.. toctree::
+   :maxdepth: 2
+
+   core
+
+Default modules
+---------------
 
 .. toctree::
    :maxdepth: 2

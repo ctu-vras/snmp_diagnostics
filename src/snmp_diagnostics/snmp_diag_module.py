@@ -14,13 +14,14 @@ class SnmpDiagModule(object):
 
     def __init__(self, engine):
         """
-        :param SnmpEngine engine: The SNMP engine instance.
+        :param pysnmp.hlapi.v3arch.SnmpEngine engine: The SNMP engine instance.
         """
         self.engine = engine
         self.mib_builder = context.SnmpContext(self.engine).getMibInstrum().getMibBuilder()
 
     def get_diag_name(self):
         """The name that will be shown in the top-level diagnostics item.
+
         :return: The name.
         :rtype: str
         """
@@ -28,19 +29,22 @@ class SnmpDiagModule(object):
 
     def register(self, updater):
         """Register this module with the diagnostic updater.
+
         :param diagnostic_updater.Updater updater: The updater instance.
         """
         updater.add(self.get_diag_name(), self.produce_diagnostics)
 
     def get_oids(self):
         """Get the list of OIDs that should be queried for this module.
+
         :return: The list of OIDs.
-        :rtype: list of pysnmp.smi.rfc1902.ObjectType
+        :rtype: list of :class:`pysnmp.smi.rfc1902.ObjectType`
         """
         raise NotImplementedError()
 
     def parse_response(self, response_iterator):
         """Parse the SNMP response iterator into something this module understands.
+
         :param iterator response_iterator: The SNMP response iterator.
         :return: The processed response data.
         :rtype: any
@@ -50,12 +54,14 @@ class SnmpDiagModule(object):
     def process_response(self, response):
         """Process the response of SNMP agent and save the result in the module for later use by
         :meth:`produce_diagnostics`.
+
         :param any response: The SNMP response processed by :meth:`parse_response`.
         """
         raise NotImplementedError()
 
     def produce_diagnostics(self, diagnostics):
         """Produce diagnostics from the data stored by :meth:`process_response`.
+
         :param diagnostic_updater.DiagnosticStatusWrapper diagnostics: The diagnostics wrapper to update.
         """
         raise NotImplementedError()

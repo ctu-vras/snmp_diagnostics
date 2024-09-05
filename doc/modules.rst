@@ -1,24 +1,12 @@
 .. SPDX-License-Identifier: BSD-3-Clause
 .. SPDX-FileCopyrightText: Czech Technical University in Prague
 
-snmp\_diagnostics package
-=========================
+snmp\_diagnostics Default Modules
+=================================
 
-Submodules
-----------
-
-snmp\_diagnostics.snmp\_diag\_module module
--------------------------------------------
-
-.. automodule:: snmp_diagnostics.snmp_diag_module
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-snmp\_diagnostics.if\_mib module
--------------------------------------------
+if\_mib (OIDs 1.3.6.1.2.1.2 and 1.3.6.1.2.1.31)
+-----------------------------------------------
 
 .. automodule:: snmp_diagnostics.if_mib
    :members:
-   :undoc-members:
    :show-inheritance:

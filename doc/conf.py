@@ -8,3 +8,8 @@ os.environ['CRAS_DOCS_COMMON_SPHINX_PACKAGE_PATH'] = os.path.dirname(os.path.dir
 
 # include the master configuration
 from cras_docs_common.sphinx_docs_conf import *
+
+intersphinx_mapping["diagnostic_updater"] = (ros_api + 'diagnostic_updater/html/python', None)
+intersphinx_mapping["pysnmp"] = ('https://pysnmp.readthedocs.io/en/latest', None)
+
+default_role = 'code'

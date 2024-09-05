@@ -3,6 +3,9 @@
 
 # This is an example config of the if_mib module.
 
+# Ports in this config have aliases (ifAlias) that give them their logical names. If you don't use
+# aliases, names of the ports would be `lan1`, `eth0` or similar, not `Bullet` etc.
+
 modules:
   if_mib:
     num_ports: 12

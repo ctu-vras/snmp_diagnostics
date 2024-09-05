@@ -78,7 +78,27 @@ ifDescr = ifMtu = ifSpeed = ifOperStatus = ifName = ifHighSpeed = ifConnectorPre
 
 
 class IfMibDiagnostics(SnmpDiagModule):
-    """A module that can process SNMP IF-MIB data into ROS diagnostics."""
+    """A module that can process SNMP IF-MIB data into ROS diagnostics.
+    
+    ROS parameters of the module are:
+
+    - `if_mib` (dict)
+
+      - `num_ports` (int, optional): If specified, the diagnostics will check that exactly this number of
+        ports is reported.
+      - `ports` (dict `port_name` => `port_params`): Specification of the expected ports. `port_name` is
+        a string identifying the port (e.g. `eth0`), decoded either from `ifAlias`, `ifName` or
+        `ifDescr` (in this order). `port_params` is a dict with following keys:
+
+        - `connected` (bool, optional): Check that the connection state of this port is as specified.
+        - `speed` (int or tuple (int, int), optional): The expected speed of the port in Mbps. If a tuple
+          is specified, it denotes a (min, max) range.
+        - `mtu` (int or tuple (int, int), optional): The expected MTU of the port in B. If a tuple
+          is specified, it denotes a (min, max) range.
+        - `dummy` (whatever): If you only need to specify a port to be present, but do not require
+          any particular properties or state, just specify a dummy parameter so that the port's key
+          is present in the `ports` dictionary.
+    """
 
     oids = [
         ObjectType(ObjectIdentity('IF-MIB', 'ifAlias')),
@@ -93,7 +113,7 @@ class IfMibDiagnostics(SnmpDiagModule):
 
     def __init__(self, engine):
         """
-        :param SnmpEngine engine: The SNMP engine instance.
+        :param pysnmp.hlapi.v3arch.SnmpEngine engine: The SNMP engine instance.
         """
         super(IfMibDiagnostics, self).__init__(engine)
 

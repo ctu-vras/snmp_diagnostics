@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+SPDX-License-Identifier: BSD-3-Clause
+SPDX-FileCopyrightText: Czech Technical University in Prague
+-->
+<launch>
+    <node name="snmp_diag" pkg="snmp_diagnostics" type="snmp_diagnostics" output="screen">
+        <rosparam command="load" file="$(dirname)/example.yaml" />
+        <param name="agent_address" value="127.0.0.1" />
+    </node>
+</launch>
