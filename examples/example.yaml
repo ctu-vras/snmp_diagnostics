@@ -6,6 +6,13 @@
 # Ports in this config have aliases (ifAlias) that give them their logical names. If you don't use
 # aliases, names of the ports would be `lan1`, `eth0` or similar, not `Bullet` etc.
 
+# The aliases are mangled by the code so that they are valid ROS graph resource names - i.e.
+# matching regex ^[a-zA-Z][a-zA-Z0-9_]*$. To perform this mangling, iconv //TRANSLIT feature is used
+# to find the "closest" ASCII character to all non-ASCII ones, and then all non-alphanumeric
+# characters are replaced by underscores (e.g. spaces), and multiple underscores are coalesced into
+# a single one. If the mangled alias is still not a valid name (e.g. it starts with a number),
+# ifName or ifDescr are tried next (they also undergo this name mangling).
+
 modules:
   if_mib:
     num_ports: 12
@@ -13,13 +20,13 @@ modules:
       Bullet:
         connected: True
         speed: 1000
-      Cam 6:
+      Cam_6:  # Original alias is "Cam 6"
         connected: True
         speed: 1000
-      Cam 7:
+      Cam_7:  # Original alias is "Cam 7"
         connected: True
         speed: 1000
-      Top Box:
+      Top_Box:  # Original alias is "Top Box"
         dummy: True
       IEI:
         connected: True

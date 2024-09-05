@@ -37,8 +37,8 @@ ports and their status.
 - `num_ports` (int, optional): If specified, the diagnostics will check that exactly this number of
     ports is reported.
 - `ports` (dict `port_name` => `port_params`): Specification of the expected ports. `port_name` is
-    a string identifying the port (e.g. `eth0`), decoded either from `ifAlias`, `ifName` or
-    `ifDescr` (in this order). `port_params` is a dict with following keys:
+    a string identifying the port (e.g. `eth0`), mangled either from `ifAlias`, `ifName` or
+    `ifDescr` (see below). `port_params` is a dict with following keys:
   - `connected` (bool, optional): Check that the connection state of this port is as specified.
   - `speed` (int or tuple (int, int), optional): The expected speed of the port in Mbps. If a tuple
       is specified, it denotes a (min, max) range.
@@ -47,6 +47,13 @@ ports and their status.
   - `dummy` (whatever): If you only need to specify a port to be present, but do not require
       any particular properties or state, just specify a dummy parameter so that the port's key
       is present in the `ports` dictionary.
+
+The `port_name` is mangled so that it is a valid ROS graph resource name - i.e. matching regex 
+`^[a-zA-Z][a-zA-Z0-9_]*$`. To perform this mangling, iconv //TRANSLIT feature is used
+to find the "closest" ASCII character to all non-ASCII ones, and then all non-alphanumeric
+characters are replaced by underscores (e.g. spaces), and multiple underscores are coalesced into
+a single one. If the resulting name is not a valid graph resource name (e.g. it starts with a number),
+the next name "source" is tried - in the order `ifAlias`, `ifName`, `ifDescr`.
 
 ## Easy configuration of local machine to provide SNMP info about itself
 

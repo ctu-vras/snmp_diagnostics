@@ -12,8 +12,10 @@ import sys
 from pysnmp.hlapi import ObjectType, ObjectIdentity
 from pysnmp.hlapi.varbinds import AbstractVarBinds
 
+import cras
 import rospy
 
+from cras.string_utils import to_valid_ros_name
 from diagnostic_msgs.msg import DiagnosticStatus
 
 from .snmp_diag_module import SnmpDiagModule
@@ -42,11 +44,43 @@ port_oper_status_names = {
 
 class NetworkInterfaceStatus:
     name = ""
+    descr = ""
     alias = ""
+    config_key = ""
+    pretty_name = ""
     speed = 0
     operational_status = 0
     connector_present = True
     mtu = 1500
+
+    def determine_names(self):
+        if self.alias:
+            try:
+                self.config_key = to_valid_ros_name(self.alias)
+                self.pretty_name = self.alias
+            except ValueError:
+                pass
+
+        if not self.config_key and self.name:
+            try:
+                self.config_key = to_valid_ros_name(self.name)
+                self.pretty_name = self.name
+            except ValueError:
+                pass
+
+        if not self.config_key and self.descr:
+            try:
+                self.config_key = to_valid_ros_name(self.descr)
+                self.pretty_name = self.descr
+            except ValueError:
+                pass
+        
+        if not self.config_key:
+            raise ValueError("Could not determine any name of network interface. "
+                             "ifAlias='%s', ifName='%s', ifDescr='%s'" % (self.alias, self.name, self.descr))
+        
+        if self.pretty_name != self.config_key:
+            cras.loginfo_once_identical("Port '%s' uses mangled config key '%s'" % (self.pretty_name, self.config_key))
 
     def __str__(self):
         status = "N/C"
@@ -56,7 +90,7 @@ class NetworkInterfaceStatus:
             else:
                 status = "Down"
 
-        return "%s (%s)" % (self.name, status)
+        return "%s (%s)" % (self.pretty_name, status)
 
 
 class NetworkInterfaceDesiredStatus:
@@ -87,8 +121,8 @@ class IfMibDiagnostics(SnmpDiagModule):
       - `num_ports` (int, optional): If specified, the diagnostics will check that exactly this number of
         ports is reported.
       - `ports` (dict `port_name` => `port_params`): Specification of the expected ports. `port_name` is
-        a string identifying the port (e.g. `eth0`), decoded either from `ifAlias`, `ifName` or
-        `ifDescr` (in this order). `port_params` is a dict with following keys:
+        a string identifying the port (e.g. `eth0`), mangled either from `ifAlias`, `ifName` or
+        `ifDescr` (see below). `port_params` is a dict with following keys:
 
         - `connected` (bool, optional): Check that the connection state of this port is as specified.
         - `speed` (int or tuple (int, int), optional): The expected speed of the port in Mbps. If a tuple
@@ -98,6 +132,13 @@ class IfMibDiagnostics(SnmpDiagModule):
         - `dummy` (whatever): If you only need to specify a port to be present, but do not require
           any particular properties or state, just specify a dummy parameter so that the port's key
           is present in the `ports` dictionary.
+
+    The `port_name` is mangled so that it is a valid ROS graph resource name - i.e. matching regex 
+    `^[a-zA-Z][a-zA-Z0-9_]*$`. To perform this mangling, iconv //TRANSLIT feature is used
+    to find the "closest" ASCII character to all non-ASCII ones, and then all non-alphanumeric
+    characters are replaced by underscores (e.g. spaces), and multiple underscores are coalesced into
+    a single one. If the resulting name is not a valid graph resource name (e.g. it starts with a number),
+    the next name "source" is tried - in the order `ifAlias`, `ifName`, `ifDescr`.
     """
 
     oids = [
@@ -161,13 +202,11 @@ class IfMibDiagnostics(SnmpDiagModule):
                 for oid, val in varBinds:
                     oid = oid.getOid().asTuple()
                     if startswith(oid, ifAlias.name):
-                        status.alias = status.name = str(val)
+                        status.alias = str(val)
                     elif startswith(oid, ifName.name):
-                        if status.name == "":
-                            status.name = str(val)
+                        status.name = str(val)
                     elif startswith(oid, ifDescr.name):
-                        if status.name == "":
-                            status.name = str(val)
+                        status.descr = str(val)
                     elif startswith(oid, ifHighSpeed.name):
                         if val != 0:
                             status.speed = int(val) * 1000000
@@ -180,6 +219,11 @@ class IfMibDiagnostics(SnmpDiagModule):
                         status.connector_present = int(val) == 1
                     elif startswith(oid, ifMtu.name):
                         status.mtu = int(val)
+                try:
+                    status.determine_names()
+                except ValueError as e:
+                    rospy.logerr_throttle_identical(10, str(e))
+
                 response.append(status)
         if len(response) == 0:
             response = None
@@ -199,62 +243,59 @@ class IfMibDiagnostics(SnmpDiagModule):
 
         port_indices = dict()
         for i in range(len(response)):
-            port_indices[response[i].name] = i
+            port_indices[response[i].config_key] = i
 
         if self.num_ports is not None and len(response) != self.num_ports:
             diagnostics.mergeSummary(DiagnosticStatus.ERROR, "Wrong number of ports")
-        for port in self.desired_port_status:
-            if port not in port_indices:
-                diagnostics.mergeSummary(DiagnosticStatus.ERROR, "Port %s missing in SNMP response" % (port,))
+        for port_key in self.desired_port_status:
+            if port_key not in port_indices:
+                diagnostics.mergeSummary(DiagnosticStatus.ERROR, "Port %s missing in SNMP response" % (port_key,))
                 continue
 
         for i in range(len(response)):
-            port = response[i].name
+            port = response[i]
+            port_key = port.config_key
+            port_name = port.pretty_name
 
-            if port in self.desired_port_status:
-                diagnostics.add(port + " connection status", response[i].operational_status)
-                diagnostics.add(port + " connection status string",
-                                port_oper_status_names[response[i].operational_status])
-                if self.desired_port_status[port].connected is not None:
-                    if self.desired_port_status[port].connected:
-                        if response[i].operational_status != 1:
-                            diagnostics.mergeSummary(DiagnosticStatus.ERROR, "Port %s not connected" % (port,))
-                    else:
-                        if response[i].operational_status == 1:
-                            diagnostics.mergeSummary(DiagnosticStatus.ERROR, "Port %s connected" % (port,))
+            if port_key in self.desired_port_status:
+                desired_status = self.desired_port_status[port_key]
 
-                diagnostics.add(port + " speed [Mbps]", int(response[i].speed / 1000000))
-                if self.desired_port_status[port].speed is not None:
-                    if isinstance(self.desired_port_status[port].speed, int):
-                        if response[i].speed != self.desired_port_status[port].speed:
-                            diagnostics.mergeSummary(DiagnosticStatus.ERROR, "Wrong speed of port %s." % (port,))
-                            diagnostics.add(port + " desired speed [Mbps]",
-                                            int(self.desired_port_status[port].speed / 1000000))
-                    elif isinstance(self.desired_port_status[port].speed, (tuple, list)):
-                        min_speed = self.desired_port_status[port].speed[0]
-                        max_speed = self.desired_port_status[port].speed[1]
-                        if not (min_speed <= response[i].speed <= max_speed):
-                            diagnostics.mergeSummary(DiagnosticStatus.ERROR, "Wrong speed of port %s" % (port,))
-                            diagnostics.add(port + " desired speed [Mbps]", "%i - %i" % (
-                                int(min_speed / 1000000), int(max_speed / 1000000)))
+                diagnostics.add(port_name + " connection status", port.operational_status)
+                diagnostics.add(port_name + " connection status string",
+                                port_oper_status_names[port.operational_status])
 
-                diagnostics.add(port + " MTU [B]", response[i].mtu)
-                if self.desired_port_status[port].mtu is not None:
-                    if isinstance(self.desired_port_status[port].mtu, int):
-                        if response[i].mtu != self.desired_port_status[port].mtu:
-                            diagnostics.mergeSummary(DiagnosticStatus.ERROR, "Wrong MTU of port %s" % (port,))
-                            diagnostics.add(port + " desired MTU [B]", self.desired_port_status[port].speed)
-                    elif isinstance(self.desired_port_status[port].mtu, (tuple, list)):
-                        min_mtu = self.desired_port_status[port].mtu[0]
-                        max_mtu = self.desired_port_status[port].mtu[1]
-                        if not (min_mtu <= response[i].mtu <= max_mtu):
-                            diagnostics.mergeSummary(DiagnosticStatus.ERROR, "Wrong MTU of port %s" % (port,))
-                            diagnostics.add(port + " desired MTU [B]", "%i - %i" % self.desired_port_status[port].mtu)
+                if desired_status.connected is True and port.operational_status != 1:
+                    diagnostics.mergeSummary(DiagnosticStatus.ERROR, "Port %s not connected" % (port_name,))
+                elif desired_status.connected is False and port.operational_status == 1:
+                    diagnostics.mergeSummary(DiagnosticStatus.ERROR, "Port %s connected" % (port_name,))
+
+                diagnostics.add(port_name + " speed [Mbps]", int(port.speed / 1000000))
+                if isinstance(desired_status.speed, int) and port.speed != desired_status.speed:
+                    diagnostics.mergeSummary(DiagnosticStatus.ERROR, "Wrong speed of port %s." % (port_name,))
+                    diagnostics.add(port_name + " desired speed [Mbps]", int(desired_status.speed / 1000000))
+                elif isinstance(desired_status.speed, (tuple, list)):
+                    min_speed = desired_status.speed[0]
+                    max_speed = desired_status.speed[1]
+                    if not (min_speed <= port.speed <= max_speed):
+                        diagnostics.mergeSummary(DiagnosticStatus.ERROR, "Wrong speed of port %s" % (port_name,))
+                        diagnostics.add(port_name + " desired speed [Mbps]", "%i - %i" % (
+                            int(min_speed / 1000000), int(max_speed / 1000000)))
+
+                diagnostics.add(port_name + " MTU [B]", port.mtu)
+                if isinstance(desired_status.mtu, int) and port.mtu != desired_status.mtu:
+                    diagnostics.mergeSummary(DiagnosticStatus.ERROR, "Wrong MTU of port %s" % (port_name,))
+                    diagnostics.add(port_name + " desired MTU [B]", desired_status.speed)
+                elif isinstance(desired_status.mtu, (tuple, list)):
+                    min_mtu = desired_status.mtu[0]
+                    max_mtu = desired_status.mtu[1]
+                    if not (min_mtu <= port.mtu <= max_mtu):
+                        diagnostics.mergeSummary(DiagnosticStatus.ERROR, "Wrong MTU of port %s" % (port_name,))
+                        diagnostics.add(port_name + " desired MTU [B]", "%i - %i" % desired_status.mtu)
             else:
                 status = "Not Connected"
-                if response[i].connector_present:
-                    if response[i].operational_status == 1:
-                        status = if_speed_names.get(response[i].speed, "%i Mbps" % (int(response[i].speed / 1000000),))
+                if port.connector_present:
+                    if port.operational_status == 1:
+                        status = if_speed_names.get(port.speed, "%i Mbps" % (int(port.speed / 1000000),))
                     else:
                         status = "Down"
-                diagnostics.add(port + " status", status)
+                diagnostics.add(port_name + " status", status)
