@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 # SPDX-FileCopyrightText: Czech Technical University in Prague
 
-"""A module that can process SNMP IF-MIB data into ROS diagnostics."""
+"""A plugins that can process SNMP IF-MIB data into ROS diagnostics."""
 
 from __future__ import print_function
 
@@ -18,8 +18,7 @@ import rospy
 from cras.string_utils import to_valid_ros_name
 from diagnostic_msgs.msg import DiagnosticStatus
 
-from .snmp_diag_module import SnmpDiagModule
-
+from snmp_diagnostics.snmp_diag_plugin import SnmpDiagPlugin
 
 if_speed_names = {
     10000000: "10 Mbps",
@@ -29,7 +28,6 @@ if_speed_names = {
     5000000000: "5 Gbps",
     10000000000: "10 Gbps",
 }
-
 
 port_oper_status_names = {
     1: "up",
@@ -74,11 +72,11 @@ class NetworkInterfaceStatus:
                 self.pretty_name = self.descr
             except ValueError:
                 pass
-        
+
         if not self.config_key:
             raise ValueError("Could not determine any name of network interface. "
                              "ifAlias='%s', ifName='%s', ifDescr='%s'" % (self.alias, self.name, self.descr))
-        
+
         if self.pretty_name != self.config_key:
             cras.loginfo_once_identical("Port '%s' uses mangled config key '%s'" % (self.pretty_name, self.config_key))
 
@@ -111,10 +109,10 @@ def startswith(oid1, oid2):
 ifDescr = ifMtu = ifSpeed = ifOperStatus = ifName = ifHighSpeed = ifConnectorPresent = ifAlias = None
 
 
-class IfMibDiagnostics(SnmpDiagModule):
-    """A module that can process SNMP IF-MIB data into ROS diagnostics.
-    
-    ROS parameters of the module are:
+class IfMibDiagnostics(SnmpDiagPlugin):
+    """A plugin that can process SNMP IF-MIB data into ROS diagnostics.
+
+    ROS parameters of the plugin are:
 
     - `if_mib` (dict)
 
@@ -133,7 +131,7 @@ class IfMibDiagnostics(SnmpDiagModule):
           any particular properties or state, just specify a dummy parameter so that the port's key
           is present in the `ports` dictionary.
 
-    The `port_name` is mangled so that it is a valid ROS graph resource name - i.e. matching regex 
+    The `port_name` is mangled so that it is a valid ROS graph resource name - i.e. matching regex
     `^[a-zA-Z][a-zA-Z0-9_]*$`. To perform this mangling, iconv //TRANSLIT feature is used
     to find the "closest" ASCII character to all non-ASCII ones, and then all non-alphanumeric
     characters are replaced by underscores (e.g. spaces), and multiple underscores are coalesced into
@@ -152,11 +150,12 @@ class IfMibDiagnostics(SnmpDiagModule):
         ObjectType(ObjectIdentity('IF-MIB', 'ifMtu')),
     ]
 
-    def __init__(self, engine):
+    def __init__(self, engine, config):
         """
         :param pysnmp.hlapi.v3arch.SnmpEngine engine: The SNMP engine instance.
+        :param dict config: The configuration dictionary.
         """
-        super(IfMibDiagnostics, self).__init__(engine)
+        super(IfMibDiagnostics, self).__init__(engine, config)
 
         global ifDescr, ifMtu, ifSpeed, ifOperStatus, ifName, ifHighSpeed, ifConnectorPresent, ifAlias
         (
@@ -166,7 +165,6 @@ class IfMibDiagnostics(SnmpDiagModule):
             'ifDescr', 'ifMtu', 'ifSpeed', 'ifOperStatus', 'ifName', 'ifHighSpeed', 'ifConnectorPresent', 'ifAlias',
         )
 
-        config = rospy.get_param("~modules/if_mib", {})
         self.num_ports = config.get("num_ports", None)
         self.desired_port_status = {}
         ports = config.get("ports", {})
@@ -194,7 +192,7 @@ class IfMibDiagnostics(SnmpDiagModule):
                 print(errorIndication, file=sys.stderr)
                 break
             elif errorStatus:
-                print('%s at %s' % (errorStatus.prettyPrint(), errorIndex and varBinds[int(errorIndex)-1][0] or '?'),
+                print('%s at %s' % (errorStatus.prettyPrint(), errorIndex and varBinds[int(errorIndex) - 1][0] or '?'),
                       file=sys.stderr)
                 break
             else:

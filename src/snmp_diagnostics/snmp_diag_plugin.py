@@ -1,22 +1,24 @@
 # SPDX-License-Identifier: BSD-3-Clause
 # SPDX-FileCopyrightText: Czech Technical University in Prague
 
-"""A module that can process SNMP OIDs into ROS diagnostics."""
+"""A plugin that can process SNMP OIDs into ROS diagnostics."""
 
-__all__ = ['SnmpDiagModule']
+__all__ = ['SnmpDiagPlugin']
 
 
 from pysnmp.entity.rfc3413 import context
 
 
-class SnmpDiagModule(object):
-    """A module that can process SNMP OIDs into ROS diagnostics."""
+class SnmpDiagPlugin(object):
+    """A plugin that can process SNMP OIDs into ROS diagnostics."""
 
-    def __init__(self, engine):
+    def __init__(self, engine, config):
         """
         :param pysnmp.hlapi.v3arch.SnmpEngine engine: The SNMP engine instance.
+        :param dict config: The configuration dictionary.
         """
         self.engine = engine
+        self.config = config
         self.mib_builder = context.SnmpContext(self.engine).getMibInstrum().getMibBuilder()
 
     def get_diag_name(self):
@@ -28,14 +30,14 @@ class SnmpDiagModule(object):
         raise NotImplementedError()
 
     def register(self, updater):
-        """Register this module with the diagnostic updater.
+        """Register this plugin with the diagnostic updater.
 
         :param diagnostic_updater.Updater updater: The updater instance.
         """
         updater.add(self.get_diag_name(), self.produce_diagnostics)
 
     def get_oids(self):
-        """Get the list of OIDs that should be queried for this module.
+        """Get the list of OIDs that should be queried for this plugin.
 
         :return: The list of OIDs.
         :rtype: list of :class:`pysnmp.smi.rfc1902.ObjectType`
@@ -43,7 +45,7 @@ class SnmpDiagModule(object):
         raise NotImplementedError()
 
     def parse_response(self, response_iterator):
-        """Parse the SNMP response iterator into something this module understands.
+        """Parse the SNMP response iterator into something this plugin understands.
 
         :param iterator response_iterator: The SNMP response iterator.
         :return: The processed response data.
@@ -52,7 +54,7 @@ class SnmpDiagModule(object):
         raise NotImplementedError()
 
     def process_response(self, response):
-        """Process the response of SNMP agent and save the result in the module for later use by
+        """Process the response of SNMP agent and save the result in the plugin for later use by
         :meth:`produce_diagnostics`.
 
         :param any response: The SNMP response processed by :meth:`parse_response`.

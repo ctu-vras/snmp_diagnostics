@@ -16,13 +16,13 @@ Core API
 
    core
 
-Default modules
+Default plugins
 ---------------
 
 .. toctree::
    :maxdepth: 2
 
-   modules
+   plugins
 
 Indices and tables
 ==================

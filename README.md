@@ -20,16 +20,16 @@ ROS node that reads various data over SNMP and turns them into ROS diagnostics m
 - `~snmp_v2` (bool, default True): Whether to use SNMPv2c or SNMPv1.
 - `~udpv6` (bool, default False): Whether to use UDPv6 transport or UDPv4.
 - `~rate` (float, default 1.0): The rate at which the SNMP agent is polled.
-- `~modules` (dict): Module-specific configuration. Keys are names of the modules (e.g. `if_mib`).
-    Values are dictionaries described further for each module.
+- `~plugins` (dict): Plugin-specific configuration. Keys are `config_key` attributes of the plugins
+    (e.g. `if_mib`). Values are dictionaries described further for each plugin.
 
-## Known MIB Processing Modules
+## Known MIB Processing Plugins
 
-So far, there is only a single module, but more are planned to be added (e.g. host resources).
+So far, there is only a single plugin, but more are planned to be added (e.g. host resources).
 
 ### if_mib
 
-This module reads `IF-MIB` (1.3.6.1.2.1.2 and 1.3.6.1.2.1.31) and extracts information about network
+This plugin reads `IF-MIB` (1.3.6.1.2.1.2 and 1.3.6.1.2.1.31) and extracts information about network
 ports and their status.
 
 #### Parameters
@@ -52,8 +52,28 @@ The `port_name` is mangled so that it is a valid ROS graph resource name - i.e. 
 `^[a-zA-Z][a-zA-Z0-9_]*$`. To perform this mangling, iconv //TRANSLIT feature is used
 to find the "closest" ASCII character to all non-ASCII ones, and then all non-alphanumeric
 characters are replaced by underscores (e.g. spaces), and multiple underscores are coalesced into
-a single one. If the resulting name is not a valid graph resource name (e.g. it starts with a number),
-the next name "source" is tried - in the order `ifAlias`, `ifName`, `ifDescr`.
+a single one. If the resulting name is not a valid graph resource name (e.g. it starts with 
+number), the next name "source" is tried - in the order `ifAlias`, `ifName`, `ifDescr`.
+
+## Writing a new plugin
+
+To create a new plugin processing different MIBs, just write a normal Python ROS package that
+[exports a Python package](https://wiki.ros.org/catkin/CMakeLists.txt#Enabling_Python_module_support)
+containing your plugin. The plugin has to inherit from class `snmp_diagnostics.SnmpDiagPlugin` and
+implement its abstract methods.
+
+Add the following lines to your package's `package.xml`:
+
+```xml
+<exec_depend>snmp_diagnostics</exec_depend>
+<export>
+    <snmp_diagnostics class="my_package.module.Class" config_key="my_plugin" />
+</export>
+```
+
+Make sure `my_package.module.Class` is the fully qualified name of your plugin class.
+`config_key` if the name under which you will configure the plugin on ROS parameter server, i.e.
+it will get its configuration from `~/plugins/<config_key>`.
 
 ## Easy configuration of local machine to provide SNMP info about itself
 

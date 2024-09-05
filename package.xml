@@ -28,6 +28,7 @@
   
   <exec_depend version_lte="2.4.2">cras_py_common</exec_depend>
   <exec_depend>diagnostic_updater</exec_depend>
+  <exec_depend>pluginlib</exec_depend>
   <exec_depend>rospy</exec_depend>
   
   <test_depend condition="$ROS_PYTHON_VERSION == 2">python-catkin-lint</test_depend>
@@ -38,5 +39,6 @@
   <doc_depend>rosdoc_lite</doc_depend>
   <export>
       <rosdoc config="rosdoc.yaml"/>
+      <snmp_diagnostics class="snmp_diagnostics.plugins.if_mib.IfMibDiagnostics" config_key="if_mib" />
   </export>
 </package>

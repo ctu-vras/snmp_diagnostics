@@ -13,7 +13,7 @@
 # a single one. If the mangled alias is still not a valid name (e.g. it starts with a number),
 # ifName or ifDescr are tried next (they also undergo this name mangling).
 
-modules:
+plugins:
   if_mib:
     num_ports: 12
     ports:

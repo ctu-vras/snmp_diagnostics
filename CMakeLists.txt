@@ -16,8 +16,9 @@ catkin_install_python(PROGRAMS
 )
 
 install(FILES
-  config/if_mib.yaml
-  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/config/
+  examples/example.launch
+  examples/example.yaml
+  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/examples/
 )
 
 if (CATKIN_ENABLE_TESTING)

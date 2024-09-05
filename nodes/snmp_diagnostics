@@ -13,7 +13,7 @@ ROS parameters:
 - `~snmp_v2` (bool, default True): Whether to use SNMPv2c or SNMPv1.
 - `~udpv6` (bool, default False): Whether to use UDPv6 transport or UDPv4.
 - `~rate` (float, default 1.0): The rate at which the SNMP agent is polled.
-- `~modules` (dict): Module-specific configuration.
+- `~plugins` (dict): Plugin-specific configuration.
 """
 
 from __future__ import print_function
@@ -28,9 +28,9 @@ from diagnostic_updater import Updater
 
 import rospy
 
-from snmp_diagnostics.if_mib import IfMibDiagnostics
+from snmp_diagnostics.plugin_manager import PluginManager
 
-rospy.init_node("snmp_diagnostics")
+rospy.init_node("snmp_diagnostics", log_level=rospy.DEBUG)
 
 agent_address = get_param("~agent_address", "127.0.0.1")
 agent_port = get_param("~agent_port", 161)
@@ -46,15 +46,15 @@ context_data = ContextData()
 
 rate = SteadyRate(get_param("~rate", 1.0, "Hz"))
 
-modules = (
-    IfMibDiagnostics(engine),  # TODO plugin-like autodiscovery
-)
+plugins_config = rospy.get_param("~plugins", dict())
+plugin_manager = PluginManager(engine, plugins_config)
+plugins = plugin_manager.plugins
 
 updater = Updater()
 updater.setHardwareID(platform.node())
 
-for module in modules:
-    module.register(updater)
+for plugin in plugins:
+    plugin.register(updater)
 
 
 def diag_update(_):
@@ -65,14 +65,14 @@ timer = rospy.Timer(rospy.Duration(1), diag_update)
 
 stop = False
 while not rospy.is_shutdown() and not stop:
-    for module in modules:
+    for plugin in plugins:
         try:
-            oids = module.get_oids()
+            oids = plugin.get_oids()
             if len(oids) == 0:
                 continue
             cmd = nextCmd(engine, community_data, transport_target, context_data, *oids, lexicographicMode=False)
-            response = module.parse_response(cmd)
-            module.process_response(response)
+            response = plugin.parse_response(cmd)
+            plugin.process_response(response)
         except KeyboardInterrupt:
             stop = True
             break
