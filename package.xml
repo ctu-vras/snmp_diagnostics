@@ -4,7 +4,7 @@
 
 <package format="3">
   <name>snmp_diagnostics</name>
-  <version>0.2.0</version>
+  <version>0.2.1</version>
   <description>ROS diagnostics created from SNMP agent data</description>
 
   <maintainer email="peckama2@fel.cvut.cz">Martin Pecka</maintainer>
