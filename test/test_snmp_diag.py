@@ -5,7 +5,6 @@
 
 """Unit test for snmp_diagnostics."""
 
-import rospy
 import rostest
 import unittest
 
@@ -15,10 +14,6 @@ from snmp_diagnostics.plugin_manager import PluginManager
 
 
 class SnmpDiag(unittest.TestCase):
-    def __init__(self, *args, **kwargs):
-        super(SnmpDiag, self).__init__(*args, **kwargs)
-        rospy.init_node("snmp_diag_test")
-
     def test_plugin_instantiate(self):
         engine = SnmpEngine()
         plugin = PluginManager._instantiate_plugin(

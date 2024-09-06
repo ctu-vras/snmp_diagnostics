@@ -6,7 +6,6 @@
 
 """Unit test for IfMibDiagnostics."""
 
-import rospy
 import rostest
 import unittest
 
@@ -18,10 +17,6 @@ from snmp_diagnostics.plugins.if_mib import IfMibDiagnostics, NetworkInterfaceSt
 
 
 class IfMibTest(unittest.TestCase):
-    def __init__(self, *args, **kwargs):
-        super(IfMibTest, self).__init__(*args, **kwargs)
-        rospy.init_node("if_mib_test")
-
     def test_if_mib(self):
         engine = SnmpEngine()
         config = {
