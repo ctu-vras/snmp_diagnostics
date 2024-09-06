@@ -5,6 +5,11 @@
 Changelog for package snmp_diagnostics
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Fixed tests.
+* Contributors: Martin Pecka
+
 0.2.0 (2024-09-06)
 ------------------
 * Added unit tests.
