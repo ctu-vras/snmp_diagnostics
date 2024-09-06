@@ -27,8 +27,10 @@ if (CATKIN_ENABLE_TESTING)
   roslint_custom(catkin_lint "-W2" .)
 
   # Run roslint on Python sources
-  file(GLOB_RECURSE python_files src/*.py nodes/*)
+  file(GLOB_RECURSE python_files src/*.py nodes/* test/*.py)
   roslint_python("${python_files}")
 
   roslint_add_test()
+  
+  catkin_add_nosetests(test/test_snmp_diag.py)
 endif()

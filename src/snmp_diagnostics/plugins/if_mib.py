@@ -5,7 +5,7 @@
 
 from __future__ import print_function
 
-__all__ = ['IfMibDiagnostics']
+__all__ = ['IfMibDiagnostics', 'NetworkInterfaceStatus']
 
 import sys
 
@@ -173,7 +173,12 @@ class IfMibDiagnostics(SnmpDiagPlugin):
             if "connected" in ports[port]:
                 s.connected = bool(ports[port]["connected"])
             if "speed" in ports[port]:
-                s.speed = ports[port]["speed"] * 1000000
+                s.speed = ports[port]["speed"]
+                if isinstance(s.speed, (tuple, list)):
+                    s.speed[0] *= 1000000
+                    s.speed[1] *= 1000000
+                else:
+                    s.speed *= 1000000
             if "mtu" in ports[port]:
                 s.mtu = ports[port]["mtu"]
             self.desired_port_status[port] = s
@@ -269,7 +274,7 @@ class IfMibDiagnostics(SnmpDiagPlugin):
 
                 diagnostics.add(port_name + " speed [Mbps]", int(port.speed / 1000000))
                 if isinstance(desired_status.speed, int) and port.speed != desired_status.speed:
-                    diagnostics.mergeSummary(DiagnosticStatus.ERROR, "Wrong speed of port %s." % (port_name,))
+                    diagnostics.mergeSummary(DiagnosticStatus.ERROR, "Wrong speed of port %s" % (port_name,))
                     diagnostics.add(port_name + " desired speed [Mbps]", int(desired_status.speed / 1000000))
                 elif isinstance(desired_status.speed, (tuple, list)):
                     min_speed = desired_status.speed[0]
@@ -288,7 +293,7 @@ class IfMibDiagnostics(SnmpDiagPlugin):
                     max_mtu = desired_status.mtu[1]
                     if not (min_mtu <= port.mtu <= max_mtu):
                         diagnostics.mergeSummary(DiagnosticStatus.ERROR, "Wrong MTU of port %s" % (port_name,))
-                        diagnostics.add(port_name + " desired MTU [B]", "%i - %i" % desired_status.mtu)
+                        diagnostics.add(port_name + " desired MTU [B]", "%i - %i" % tuple(desired_status.mtu))
             else:
                 status = "Not Connected"
                 if port.connector_present:
