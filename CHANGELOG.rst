@@ -5,8 +5,8 @@
 Changelog for package snmp_diagnostics
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.2.0 (2024-09-06)
+------------------
 * Added unit tests.
 * Changed MIB modules to plugins, added a dynamic loading mechanism.
 * Implemented name mangling so that ports with aliases can still be correctly referenced in rosparam configs.
