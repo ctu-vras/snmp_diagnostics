@@ -4,10 +4,10 @@
 snmp\_diagnostics Core API
 ==========================
 
-snmp\_diag\_module module
+snmp\_diag\_plugin module
 -------------------------
 
-.. automodule:: snmp_diagnostics.snmp_diag_module
+.. automodule:: snmp_diagnostics.snmp_diag_plugin
    :members:
    :undoc-members:
    :show-inheritance:
