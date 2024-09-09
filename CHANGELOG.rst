@@ -5,8 +5,8 @@
 Changelog for package snmp_diagnostics
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.2.2 (2024-09-09)
+------------------
 * Fixed installation and docs build.
 * Contributors: Martin Pecka
 
